@@ -1,0 +1,467 @@
+{
+  lexerClass="com.omnetpp.omnetpp_plugin.NedLexer"
+  parserClass="com.omnetpp.omnetpp_plugin.parser.NedParser"
+  extends="com.intellij.extapi.psi.ASTWrapperPsiElement"
+  psiClassPrefix="Ned"
+  psiImplClassSuffix="Impl"
+  psiPackage="com.omnetpp.omnetpp_plugin.psi"
+  psiImplPackage="com.omnetpp.omnetpp_plugin.psi.impl"
+  elementTypeHolderClass="com.omnetpp.omnetpp_plugin.psi.NedTypes"
+  elementTypeClass="com.omnetpp.omnetpp_plugin.psi.NedElementType"
+  tokenTypeClass="com.omnetpp.omnetpp_plugin.psi.NedTokenType"
+
+
+}
+
+nedfile ::= definitions
+
+
+definitions ::= definition+
+
+
+definition ::= packagedeclaration
+             | import_def
+             | propertydecl
+             | fileproperty
+             | channeldefinition
+             | channelinterfacedefinition
+             | simplemoduledefinition
+             | compoundmoduledefinition
+             | networkdefinition
+             | moduleinterfacedefinition
+             | SEMI
+
+
+packagedeclaration ::= PACKAGE dottedname SEMI
+
+dottedname ::= NAME (DOT NAME)*
+
+//dottedname ::= dottedname DOT NAME
+             //| NAME
+
+
+import_def ::= KW_IMPORT importspec SEMI
+
+importspec ::= importname (DOT importname)*
+
+importname ::= (NAME | "*" | "**")+
+
+propertydecl ::= propertydecl_header opt_inline_properties SEMI
+               | propertydecl_header LPAREN opt_propertydecl_keys RPAREN opt_inline_properties SEMI
+
+propertydecl_header ::= PROPERTY DOLLAR NAME
+                      | PROPERTY DOLLAR NAME LBRACK RBRACK
+
+opt_propertydecl_keys ::= propertydecl_keys?
+
+propertydecl_keys ::= propertydecl_key (SEMI propertydecl_key)*
+
+
+propertydecl_key ::= property_literal
+
+fileproperty ::= property_namevalue SEMI
+
+property_namevalue ::= property_name
+                     | property_name LPAREN opt_property_keys RPAREN
+
+property_name ::= DOLLAR NAME
+                | DOLLAR NAME LBRACK NAME RBRACK
+
+opt_property_keys ::= property_keys?
+
+
+property_keys ::= property_key (SEMI property_key)*
+
+
+
+property_key ::= property_literal ASSIGN property_values
+               | property_values
+
+property_values ::= property_value (COMMA property_value)*
+
+property_value ::= property_literal
+                 |
+
+property_literal ::= (CHAR | STRINGCONSTANT)+
+
+channeldefinition ::= channelheader LBRACE opt_paramblock RBRACE
+
+channelheader ::= CHANNEL NAME opt_inheritance
+
+opt_inheritance ::= inheritance?
+
+inheritance ::= EXTENDS extendsname (LIKE likenames)?
+               | LIKE likenames
+
+
+extendsname ::= dottedname
+
+likenames ::= likename (COMAA likename)*
+
+likename ::= dottedname
+
+channelinterfacedefinition ::= channelinterfaceheader LBRACE opt_paramblock RBRACE
+
+channelinterfaceheader ::= CHANNELINTERFACE NAME opt_interfaceinheritance
+
+opt_interfaceinheritance ::= (EXTENDS extendsnames)?
+
+
+extendsnames ::= extendsname (COMMA extendsname)*
+
+simplemoduledefinition ::= simplemoduleheader LBRACE opt_paramblock opt_gateblock RBRACE
+
+simplemoduleheader ::= SIMPLE NAME opt_inheritance
+
+compoundmoduledefinition ::= compoundmoduleheader LBRACE opt_paramblock opt_gateblock opt_typeblock opt_submodblock opt_connblock RBRACE
+
+compoundmoduleheader ::= MODULE NAME opt_inheritance
+
+
+networkdefinition ::= networkheader LBRACE opt_paramblock opt_gateblock opt_typeblock opt_submodblock opt_connblock RBRACE
+
+networkheader ::= NETWORK NAME opt_inheritance
+
+moduleinterfacedefinition ::= moduleinterfaceheader LBRACE opt_paramblock opt_gateblock RBRACE
+
+moduleinterfaceheader ::= MODULEINTERFACE NAME opt_interfaceinheritance
+
+opt_paramblock ::= (PARAMETERS COLON opt_params)?
+
+
+opt_params ::= params?
+
+
+params ::= paramsitem+
+
+paramsitem ::= param
+             | propertydecl
+
+param ::= param_typenamevalue
+        | parampattern_value
+
+param_typenamevalue ::= param_typename opt_inline_properties SEMI
+                      | param_typename opt_inline_properties ASSIGN paramvalue opt_inline_properties SEMI
+
+param_typename ::= opt_volatile paramtype NAME
+                 | NAME
+
+parampattern_value ::= parampattern opt_inline_properties ASSIGN paramvalue SEMI
+
+paramtype ::= DOUBLE
+            | INT
+            | STRING
+            | BOOL
+            | object
+            | XML
+
+opt_volatile ::= VOLATILE?
+
+
+paramvalue ::= expression
+             | DEFAULT LPAREN expression RPAREN
+             | DEFAULT
+             | ASK
+
+opt_inline_properties ::= inline_properties?
+
+
+inline_properties ::= property_namevalue+
+
+parampattern ::= pattern
+
+pattern ::= pattern2 DOT pattern_elem
+          | pattern2 DOT TYPENAME
+
+pattern2 ::= pattern_elem (DOT pattern_elem)*
+
+pattern_elem ::= pattern_name
+               | pattern_name LBRACK pattern_index RBRACK
+               | pattern_name LBRACK "*" RBRACK
+               | "**"
+
+
+pattern_name ::= pattern_atom (NAME | LBRACE pattern_index RBRACE | "*")*
+pattern_atom  ::= NAME
+                | NAME DOLLAR NAME
+                | CHANNEL
+                | LBRACE pattern_index RBRACE
+                | "*"
+
+
+pattern_index ::= INTCONSTANT
+                | INTCONSTANT DOTDOT INTCONSTANT
+                | DOTDOT INTCONSTANT
+                | INTCONSTANT DOTDOT
+
+opt_gateblock ::= gateblock?
+
+
+gateblock ::= gates COLON opt_gates
+
+opt_gates ::= gates?
+
+
+gates ::= gate+
+
+gate ::= gate_typenamesize opt_inline_properties SEMI
+
+gate_typenamesize ::= gatetype NAME
+                    | gatetype NAME LBRACK RBRACK
+                    | gatetype NAME vector
+                    | NAME
+                    | NAME LBRACK RBRACK
+                    | NAME vector
+
+gatetype ::= INPUT
+           | OUTPUT
+           | INOUT
+opt_typeblock ::= typeblock?
+
+
+typeblock ::= TYPES COLON opt_localtypes
+
+opt_localtypes ::= localtypes?
+
+
+localtypes ::= localtype+
+
+localtype ::= propertydecl
+            | channeldefinition
+            | channelinterfacedefinition
+            | simplemoduledefinition
+            | compoundmoduledefinition
+            | networkdefinition
+            | moduleinterfacedefinition
+            | SEMI
+
+opt_submodblock ::= submodblock?
+
+
+submodblock ::= submodules_section COLON opt_submodules
+
+opt_submodules ::= submodules_section?
+
+
+submodules_section ::= submodule+
+
+submodule ::= submoduleheader SEMI
+            | submoduleheader LBRACE opt_paramblock opt_gateblock RBRACE opt_semicolon
+
+submoduleheader ::= submodulename COLON dottedname opt_condition
+                  | submodulename COLON likeexpr LIKE dottedname opt_condition
+
+submodulename ::= NAME
+                | NAME vector
+
+likeexpr ::= "<>"
+           | "<" expression ">"
+           | "<" DEFAULT LPAREN expression RPAREN ">"
+
+opt_condition ::= condition?
+
+
+//Connection block
+opt_connblock ::= connblock?
+
+
+connblock ::= KW_CONNECTIONS ALLOWUNCONNECTED COLON opt_connections
+            | KW_CONNECTIONS COLON opt_connections
+
+opt_connections ::= connectionsSection?
+
+
+connectionsSection ::= connectionsitem+
+
+
+connectionsitem ::= connectiongroup
+                  | connection opt_loops_and_conditions SEMI
+
+connectiongroup ::= opt_loops_and_conditions LBRACE connectionsSection RBRACE opt_semicolon
+
+opt_loops_and_conditions ::= loops_and_conditions?
+
+
+loops_and_conditions ::= loop_or_condition (COMMA loop_or_condition)*
+
+loop_or_condition ::= loop
+                    | condition
+
+loop ::= FOR NAME ASSIGN expression DOTDOT expression
+
+connection ::= leftgatespec ARROW rightgatespec
+             | leftgatespec ARROW channelspec ARROW rightgatespec
+             | leftgatespec "<--" rightgatespec
+             | leftgatespec "<--" channelspec "<--" rightgatespec
+             | leftgatespec "<-->" rightgatespec
+             | leftgatespec "<-->" channelspec "<-->" rightgatespec
+
+leftgatespec ::= leftmod DOT leftgate
+               | parentleftgate
+
+leftmod ::= NAME vector
+          | NAME
+
+leftgate ::= NAME opt_subgate
+           | NAME opt_subgate vector
+           | NAME opt_subgate "++"
+
+parentleftgate ::= NAME opt_subgate
+                 | NAME opt_subgate vector
+                 | NAME opt_subgate "++"
+
+rightgatespec ::= rightmod DOT rightgate
+                | parentrightgate
+
+rightmod ::= NAME
+           | NAME vector
+
+rightgate ::= NAME opt_subgate
+            | NAME opt_subgate vector
+            | NAME opt_subgate "++"
+
+parentrightgate ::= NAME opt_subgate
+                  | NAME opt_subgate vector
+                  | NAME opt_subgate "++"
+
+channelspec ::= channelspec_header
+              | channelspec_header LBRACE opt_paramblock RBRACE
+
+channelspec_header ::= opt_channelname
+                     | opt_channelname dottedname
+                     | opt_channelname likeexpr LIKE dottedname
+
+opt_channelname ::= NAME COLON?
+
+
+condition ::= IF expression
+
+vector ::= LBRACK expression RBRACK
+
+expression ::= expr
+
+expr ::= simple_expr
+       | functioncall
+       | expr DOT functioncall
+       | object
+       | array
+       | LPAREN expr RPAREN
+       | expr PLUS expr
+       | expr MINUS expr
+       | expr MUL expr
+       | expr DIV expr
+       | expr MOD expr
+       | expr POWER expr
+       | MINUS expr
+       | expr EQ expr
+       | expr NE expr
+       | expr GT expr
+       | expr GE expr
+       | expr LT expr
+       | expr LE expr
+       | expr "<=>" expr
+       | expr "=~" expr
+       | expr AND expr
+       | expr OR expr
+       | expr "##" expr
+       | NOT expr
+       | expr "&" expr
+       | expr "|" expr
+       | expr "#" expr
+       | "~" expr
+       | expr "<<" expr
+       | expr ">>" expr
+       | expr "?" expr ":" expr
+
+functioncall ::= funcname LPAREN opt_exprlist RPAREN
+
+array ::= LBRACK RBRACK
+        | LBRACK exprlist RBRACK
+        | LBRACK exprlist COMMA RBRACK
+
+object ::= LBRACE opt_keyvaluelist RBRACE
+         | NAME LBRACE opt_keyvaluelist RBRACE
+         | NAME "::" NAME LBRACE opt_keyvaluelist RBRACE
+         | NAME "::" NAME "::" NAME LBRACE opt_keyvaluelist RBRACE
+         | NAME "::" NAME "::" NAME "::" NAME LBRACE opt_keyvaluelist RBRACE
+
+opt_exprlist ::= exprlist?
+
+
+exprlist ::= exprlist COMMA expr
+           | expr
+
+opt_keyvaluelist ::= (keyvaluelist (COMMA)?)?
+
+
+keyvaluelist ::= keyvalue (COMMA keyvalue)*
+
+keyvalue ::= key COLON expr
+
+key ::= STRINGCONSTANT
+      | NAME
+      | INTCONSTANT
+      | REALCONSTANT
+      | quantity
+      | MINUS INTCONSTANT
+      | MINUS REALCONSTANT
+      | NAN
+      | INF
+      | TRUE
+      | FALSE
+      | NULL
+      | NULLPTR
+
+simple_expr ::= qname
+              | operator
+              | literal
+
+funcname ::= NAME
+           | BOOL
+           | INT
+           | DOUBLE
+           | STRING
+           | object
+           | XML
+           | XMLDOC
+
+qname_elem ::= NAME
+             | NAME LBRACK expr RBRACK
+             | THIS
+             | PARENT
+
+qname ::= qname_elem (DOT qname_elem)*
+
+operator ::= INDEX
+           | TYPENAME
+           | qname DOT INDEX
+           | qname DOT TYPENAME
+           | EXISTS LPAREN qname RPAREN
+           | SIZEOF LPAREN qname RPAREN
+
+literal ::= stringliteral
+          | boolliteral
+          | numliteral
+          | otherliteral
+
+stringliteral ::= STRINGCONSTANT
+
+boolliteral ::= TRUE
+              | FALSE
+
+numliteral ::= INTCONSTANT
+             | realconstant_ext
+             | quantity
+
+otherliteral ::= UNDEFINED
+               | NULLPTR
+               | NULL
+
+
+quantity ::= (INTCONSTANT NAME | realconstant_ext NAME )+
+
+realconstant_ext ::= REALCONSTANT
+                   | INF
+                   | NAN
+
+opt_semicolon ::= SEMI?
